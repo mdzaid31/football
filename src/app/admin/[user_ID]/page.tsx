@@ -2,7 +2,7 @@
 import { useRouter } from "next/navigation";
 import React, { useState, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
-import Message from "C:/Users/HomePC/Desktop/football/src/app/components/message";
+import Message from "../../components/message";
 import Swal from "sweetalert2";
 
 const supabase = createClient(

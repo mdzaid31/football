@@ -1,8 +1,8 @@
 "use client";
 import { useState } from "react";
-import NavBar3 from "C:/Users/HomePC/Desktop/football/src/app/components/navbar3";
+import NavBar3 from "../components/navbar3";
 import { useRouter } from "next/navigation"; // Import useRouter hook
-import { supabase } from "C:/Users/HomePC/Desktop/football/src/lib/supabase";
+import { supabase } from "../../lib/supabase";
 
 function Home() {
   const router = useRouter();

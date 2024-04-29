@@ -1,22 +1,18 @@
 "use client";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState, useRef } from "react";
-import { createClient } from "@supabase/supabase-js";
-import Message from "C:/Users/HomePC/Desktop/football/src/app/components/message";
-import LandingNavbar from "C:/Users/HomePC/Desktop/football/src/app/components/landingnavbar";
+import Message from "../../../components/message";
+import LandingNavbar from "../../../components/landingnavbar";
 import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import { Radar } from "react-chartjs-2";
 import { Chart, registerables } from "chart.js";
-import VerticalNavbar from "C:/Users/HomePC/Desktop/football/src/app/components/verticalnavbar";
-import Chatbot from "C:/Users/HomePC/Desktop/football/src/app/components/chatbot";
+import VerticalNavbar from "../../../components/verticalnavbar";
+import Chatbot from "../../../components/chatbot";
 
 Chart.register(...registerables);
-const supabase = createClient(
-  "https://binohqobswgaznnhogsn.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJpbm9ocW9ic3dnYXpubmhvZ3NuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTA2NzcwOTMsImV4cCI6MjAyNjI1MzA5M30.AYRRtfz5U__Jyalsy7AQxXrnjKr4eNooJUxnI51A6kk"
-);
+import { supabase } from "../../../../lib/supabase";
 
 const CustomPrevArrow = (props: any) => {
   const { onClick } = props;

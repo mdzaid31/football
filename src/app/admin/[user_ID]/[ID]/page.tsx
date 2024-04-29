@@ -3,7 +3,7 @@ import { useRouter } from "next/navigation"; // Corrected import
 import React, { useEffect, useState, useRef } from "react";
 import { createClient } from "@supabase/supabase-js";
 import Head from "next/head";
-import Message from "C:/Users/HomePC/Desktop/football/src/app/components/message";
+import Message from "../../../components/message";
 
 const supabase = createClient(
   "https://binohqobswgaznnhogsn.supabase.co",
