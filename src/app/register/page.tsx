@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useState } from "react";
-import { createClient } from "@supabase/supabase-js";
 import NavBar2 from "../components/navbar2";
 import RegistrationForm from "../components/registration";
 

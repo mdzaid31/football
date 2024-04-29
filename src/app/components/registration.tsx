@@ -1,19 +1,14 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import Head from "next/head";
-import { createClient } from "@supabase/supabase-js";
-import Message from "C:/Users/HomePC/Desktop/football/src/app/components/message";
+import Message from "../components/message";
 import { useRouter } from "next/navigation";
 
 interface Country {
   Country_Name: string;
 }
 
-const supabase = createClient(
-  "https://binohqobswgaznnhogsn.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJpbm9ocW9ic3dnYXpubmhvZ3NuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTA2NzcwOTMsImV4cCI6MjAyNjI1MzA5M30.AYRRtfz5U__Jyalsy7AQxXrnjKr4eNooJUxnI51A6kk"
-);
-
+import { supabase } from "../../lib/supabase";
 const RegistrationForm = () => {
   const router = useRouter();
   const [profilePicture, setProfilePicture] = useState(null);
