@@ -88,8 +88,8 @@ const Outfield: React.FC<PlayersProps> = ({ user_ID }) => {
     setSelectedPlayers(updatedPlayers);
   };
 
-  // JSX code for rendering selected player cards
-  const renderSelectedPlayers = () => {
+  // JSX code for Rendering selected player cards
+  const RenderSelectedPlayers = () => {
     const cardStyle = {
       width: "260px",
       height: "260px",
@@ -129,7 +129,7 @@ const Outfield: React.FC<PlayersProps> = ({ user_ID }) => {
     }, [selectedPlayers]); // Fetch stats when selectedPlayers change
 
     // Inside your Outfield component
-    const createCombinedRadarChart = () => {
+    const CreateCombinedRadarChart = () => {
       if (!radarChartRef.current || selectedPlayerStats.length === 0) {
         return;
       }
@@ -186,9 +186,9 @@ const Outfield: React.FC<PlayersProps> = ({ user_ID }) => {
       });
     };
 
-    // Update the useEffect to call createCombinedRadarChart
+    // Update the useEffect to call CreateCombinedRadarChart
     useEffect(() => {
-      createCombinedRadarChart();
+      CreateCombinedRadarChart();
     }, [selectedPlayers, selectedPlayerStats]); // Update chart when selected players or their stats change
 
     return (
@@ -219,7 +219,7 @@ const Outfield: React.FC<PlayersProps> = ({ user_ID }) => {
     );
   };
   useEffect(() => {
-    const fetchPlayersAndCountries = async () => {
+    const FetchPlayersAndCountries = async () => {
       try {
         // Fetch players data
         const { data: playersData, error: playersError } = await supabase
@@ -304,15 +304,15 @@ const Outfield: React.FC<PlayersProps> = ({ user_ID }) => {
       }
     };
 
-    fetchPlayersAndCountries();
+    FetchPlayersAndCountries();
   }, []);
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
-    filterPlayers(query, selectedCountry, selectedType, selectedClub);
+    FilterPlayers(query, selectedCountry, selectedType, selectedClub);
   };
 
-  const filterPlayers = (
+  const FilterPlayers = (
     query: string,
     country: string,
     type: string,
@@ -346,19 +346,19 @@ const Outfield: React.FC<PlayersProps> = ({ user_ID }) => {
     const selectedCountry = event.target.value;
     setSelectedCountry(selectedCountry);
     setSelectedType(selectedType);
-    filterPlayers(searchQuery, selectedCountry, selectedType, selectedClub);
+    FilterPlayers(searchQuery, selectedCountry, selectedType, selectedClub);
   };
 
   const handleSelectType = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedType = event.target.value;
     setSelectedType(selectedType);
-    filterPlayers(searchQuery, selectedCountry, selectedType, selectedClub);
+    FilterPlayers(searchQuery, selectedCountry, selectedType, selectedClub);
   };
 
   const handleSelectClub = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedClub = event.target.value;
     setSelectedClub(selectedClub);
-    filterPlayers(searchQuery, selectedCountry, selectedType, selectedClub);
+    FilterPlayers(searchQuery, selectedCountry, selectedType, selectedClub);
   };
 
   const numSlides = Math.ceil(filteredPlayers.length / 8); // Changed to 12 cards per slide
@@ -470,7 +470,7 @@ const Outfield: React.FC<PlayersProps> = ({ user_ID }) => {
                             {/* Calculate card indices based on slideIndex */}
                             {[0, 1].map(
                               (
-                                row // Only render two rows
+                                row // Only Render two rows
                               ) => (
                                 <div
                                   key={row}
@@ -649,7 +649,7 @@ const Outfield: React.FC<PlayersProps> = ({ user_ID }) => {
               style={{ width: "100%", borderRadius: "20px" }}
             >
               {" "}
-              {renderSelectedPlayers()}
+              {RenderSelectedPlayers()}
             </div>
           </div>
         </div>
@@ -690,8 +690,8 @@ const Goalkeeper: React.FC<PlayersProps> = ({ user_ID }) => {
     setSelectedPlayers(updatedPlayers);
   };
 
-  // JSX code for rendering selected player cards
-  const renderSelectedPlayers = () => {
+  // JSX code for Rendering selected player cards
+  const RenderSelectedPlayers = () => {
     const cardStyle = {
       width: "260px",
       height: "260px",
@@ -731,7 +731,7 @@ const Goalkeeper: React.FC<PlayersProps> = ({ user_ID }) => {
     }, [selectedPlayers]); // Fetch stats when selectedPlayers change
 
     // Inside your Outfield component
-    const createCombinedRadarChart = () => {
+    const CreateCombinedRadarChart = () => {
       if (!radarChartRef.current || selectedPlayerStats.length === 0) {
         return;
       }
@@ -788,9 +788,9 @@ const Goalkeeper: React.FC<PlayersProps> = ({ user_ID }) => {
       });
     };
 
-    // Update the useEffect to call createCombinedRadarChart
+    // Update the useEffect to call CreateCombinedRadarChart
     useEffect(() => {
-      createCombinedRadarChart();
+      CreateCombinedRadarChart();
     }, [selectedPlayers, selectedPlayerStats]); // Update chart when selected players or their stats change
 
     return (
@@ -821,7 +821,7 @@ const Goalkeeper: React.FC<PlayersProps> = ({ user_ID }) => {
     );
   };
   useEffect(() => {
-    const fetchPlayersAndCountries = async () => {
+    const FetchPlayersAndCountries = async () => {
       try {
         // Fetch players data
         const { data: playersData, error: playersError } = await supabase
@@ -908,15 +908,15 @@ const Goalkeeper: React.FC<PlayersProps> = ({ user_ID }) => {
       }
     };
 
-    fetchPlayersAndCountries();
+    FetchPlayersAndCountries();
   }, []);
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
-    filterPlayers(query, selectedCountry, selectedType, selectedClub);
+    FilterPlayers(query, selectedCountry, selectedType, selectedClub);
   };
 
-  const filterPlayers = (
+  const FilterPlayers = (
     query: string,
     country: string,
     type: string,
@@ -950,13 +950,13 @@ const Goalkeeper: React.FC<PlayersProps> = ({ user_ID }) => {
     const selectedCountry = event.target.value;
     setSelectedCountry(selectedCountry);
     setSelectedType(selectedType);
-    filterPlayers(searchQuery, selectedCountry, selectedType, selectedClub);
+    FilterPlayers(searchQuery, selectedCountry, selectedType, selectedClub);
   };
 
   const handleSelectClub = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedClub = event.target.value;
     setSelectedClub(selectedClub);
-    filterPlayers(searchQuery, selectedCountry, selectedType, selectedClub);
+    FilterPlayers(searchQuery, selectedCountry, selectedType, selectedClub);
   };
 
   const numSlides = Math.ceil(filteredPlayers.length / 8); // Changed to 12 cards per slide
@@ -1052,7 +1052,7 @@ const Goalkeeper: React.FC<PlayersProps> = ({ user_ID }) => {
                             {/* Calculate card indices based on slideIndex */}
                             {[0, 1].map(
                               (
-                                row // Only render two rows
+                                row // Only Render two rows
                               ) => (
                                 <div
                                   key={row}
@@ -1231,7 +1231,7 @@ const Goalkeeper: React.FC<PlayersProps> = ({ user_ID }) => {
               style={{ width: "100%", borderRadius: "20px" }}
             >
               {" "}
-              {renderSelectedPlayers()}
+              {RenderSelectedPlayers()}
             </div>
           </div>
         </div>
