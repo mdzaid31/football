@@ -1,0 +1,1358 @@
+"use client";
+import { useRouter } from "next/navigation";
+import React, { useEffect, useState, useRef } from "react";
+import { createClient } from "@supabase/supabase-js";
+import Message from "C:/Users/HomePC/Desktop/football/src/app/components/message";
+import LandingNavbar from "C:/Users/HomePC/Desktop/football/src/app/components/landingnavbar";
+import VerticalNavbar from "C:/Users/HomePC/Desktop/football/src/app/components/verticalnavbar";
+import Chatbot from "C:/Users/HomePC/Desktop/football/src/app/components/chatbot";
+const supabase = createClient(
+  "https://binohqobswgaznnhogsn.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJpbm9ocW9ic3dnYXpubmhvZ3NuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTA2NzcwOTMsImV4cCI6MjAyNjI1MzA5M30.AYRRtfz5U__Jyalsy7AQxXrnjKr4eNooJUxnI51A6kk"
+);
+import Slider from "react-slick";
+import "slick-carousel/slick/slick.css";
+import "slick-carousel/slick/slick-theme.css";
+
+const CustomPrevArrow = (props: any) => {
+  const { onClick } = props;
+  return (
+    <div
+      className="slick-arrow slick-prev"
+      onClick={onClick}
+      style={{ left: "0ex", zIndex: 1, color: "#333", fontSize: "36px" }}
+    >
+      {"<"}
+    </div>
+  );
+};
+
+const CustomNextArrow = (props: any) => {
+  const { onClick } = props;
+  return (
+    <div
+      className="slick-arrow slick-next"
+      onClick={onClick}
+      style={{ right: "40px", zIndex: 1, color: "#333", fontSize: "36px" }}
+    >
+      {">"}
+    </div>
+  );
+};
+
+interface Player {
+  ID: string;
+  headshot: string;
+  Name: string;
+  Type: string;
+  Country_ID: string;
+  Country_Name: string;
+  Club_ID: string;
+  Club_Name: string;
+  stats: number[]; // Array of stats [Rating, Pace, Shooting, Passing, Dribbling, Defence, Physique]
+}
+
+interface PlayersProps {
+  user_ID: string;
+  Club_ID: string;
+}
+
+const Outfield: React.FC<PlayersProps> = ({ user_ID }) => {
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [filteredPlayers, setFilteredPlayers] = useState<Player[]>([]);
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [selectedCountry, setSelectedCountry] = useState<string>("");
+  const [selectedType, setSelectedType] = useState<string>("");
+  const [uniqueCountries, setUniqueCountries] = useState<string[]>([]);
+  const [uniqueClubs, setUniqueClubs] = useState<string[]>([]);
+  const [showNoPlayersMessage, setShowNoPlayersMessage] =
+    useState<boolean>(false);
+  const [selectedClub, setSelectedClub] = useState<string>("");
+  const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
+  const [selectedPlayerStats, setSelectedPlayerStats] = useState<number[]>([]); // Changed to number[]
+  const [similarPlayers, setSimilarPlayers] = useState<string[]>([]);
+  const [selectedPlayerCard, setSelectedPlayerCard] = useState<string>(""); // Add semicolon and specify the initial state
+  const [similarPlayersCard, setSimilarPlayersCard] = useState<string[]>([]); // Add semicolon and specify the initial state
+
+  const router = useRouter();
+  useEffect(() => {
+    const fetchPlayersAndCountries = async () => {
+      try {
+        // Fetch players data
+        const { data: playersData, error: playersError } = await supabase
+          .from("players")
+          .select("headshot, Name, Type, Country_ID, ID, Club_ID")
+          .in("Type", ["defender", "midfielder", "forward"])
+          .order("ID", { ascending: true });
+        if (playersError) throw playersError;
+
+        // Fetch player stats data
+        const { data: playerStatsData, error: statsError } = await supabase
+          .from("player_stats")
+          .select(
+            "Rating, Finishing, Vision, Crossing, Balance, Reactions, Stamina, Agression, Strength, Pace, Shooting, Passing, Dribbling, Defence, Physique, ID"
+          )
+          .neq("ID", "0");
+        if (statsError) throw statsError;
+
+        // Fetch countries data
+        const uniqueCountryIDs = [
+          ...new Set(playersData.map((player) => player.Country_ID)),
+        ];
+        const { data: countriesData, error: countriesError } = await supabase
+          .from("countries")
+          .select("Country_ID, Country_Name")
+          .in("Country_ID", uniqueCountryIDs);
+        if (countriesError) throw countriesError;
+
+        // Fetch clubs data
+        const uniqueClubIDs = [
+          ...new Set(playersData.map((player) => player.Club_ID)),
+        ];
+        const { data: clubsData, error: clubsError } = await supabase
+          .from("clubs")
+          .select("Club_ID, Club_Name")
+          .in("Club_ID", uniqueClubIDs);
+        if (clubsError) throw clubsError;
+
+        // Update state with fetched data
+        setUniqueCountries(countriesData);
+        setUniqueClubs(clubsData);
+
+        // Create a map of player stats using player_id as key
+        const playerStatsMap = new Map();
+        playerStatsData.forEach((stats) => {
+          playerStatsMap.set(stats.ID, stats);
+        });
+
+        // Combine player data with stats, clubs, and countries
+        const playersWithFullData = playersData.map((player) => {
+          const stats = playerStatsMap.get(player.ID) || {
+            Rating: 0,
+            Pace: 0,
+            Shooting: 0,
+            Passing: 0,
+            Dribbling: 0,
+            Defence: 0,
+            Physique: 0,
+            Strength: 0,
+            Agression: 0,
+            Finishing: 0,
+            Crossing: 0,
+            Vision: 0,
+            Stamina: 0,
+            Balance: 0,
+            Reactions: 0,
+          };
+          const statsArray = [
+            stats.Rating,
+            stats.Pace,
+            stats.Shooting,
+            stats.Passing,
+            stats.Dribbling,
+            stats.Defence,
+            stats.Physique,
+            stats.Strength,
+            stats.Agression,
+            stats.Finishing,
+            stats.Crossing,
+            stats.Vision,
+            stats.Stamina,
+            stats.Balance,
+            stats.Reactions,
+          ];
+          const country = countriesData.find(
+            (country) => country.Country_ID === player.Country_ID
+          ) || { Country_Name: "Unknown" };
+          const club = clubsData.find(
+            (club) => club.Club_ID === player.Club_ID
+          ) || { Club_Name: "Unknown" };
+          return {
+            ...player,
+            stats: statsArray,
+            Country_Name: country.Country_Name,
+            Club_Name: club.Club_Name,
+          };
+        });
+
+        setPlayers(playersWithFullData);
+        setFilteredPlayers(playersWithFullData);
+      } catch (error) {
+        console.error("Error fetching data:", error.message);
+      }
+    };
+
+    fetchPlayersAndCountries();
+  }, []);
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    filterPlayers(query, selectedCountry, selectedType, selectedClub);
+  };
+
+  const handleSelectPlayer = async (playerID: string) => {
+    try {
+      const player = players.find((player) => player.ID === playerID);
+      setSelectedPlayer(player || null);
+
+      if (player) {
+        setSelectedPlayerStats(player.stats);
+
+        // Fetch the "Card" data for the selected player
+        const { data: selectedPlayerCardData, error: cardError } =
+          await supabase
+            .from("player_stats")
+            .select("Card")
+            .eq("ID", player.ID)
+            .single();
+
+        if (cardError) throw cardError;
+
+        const selectedCard = selectedPlayerCardData?.Card || "";
+        setSelectedPlayerCard(selectedCard);
+
+        // Find similar players when player is selected
+        const similarPlayerData = findSimilarPlayers(player.stats, player.ID);
+        setSimilarPlayers(similarPlayerData);
+
+        // Fetch cards for similar players
+        const similarPlayerIDs = similarPlayerData.map((player) => player.id);
+        const { data: similarPlayersCardData, error: similarPlayersCardError } =
+          await supabase
+            .from("player_stats")
+            .select("ID, Card") // Include ID in the selection
+            .in("ID", similarPlayerIDs);
+        if (similarPlayersCardError) throw similarPlayersCardError;
+
+        // Create a map of similar player IDs to their cards
+        const similarPlayersCardMap = new Map();
+        similarPlayersCardData.forEach((player) => {
+          similarPlayersCardMap.set(player.ID, player.Card);
+        });
+
+        // Map similar player IDs to their corresponding cards
+        const similarPlayersCard = similarPlayerIDs.map(
+          (id) => similarPlayersCardMap.get(id) || ""
+        );
+        setSimilarPlayersCard(similarPlayersCard); // Set cards for similar players
+      }
+    } catch (error) {
+      console.error("Error selecting player:", error.message);
+    }
+  };
+
+  const filterPlayers = (
+    query: string,
+    country: string,
+    type: string,
+    club: string
+  ) => {
+    let filtered = players;
+
+    if (query) {
+      filtered = filtered.filter((player) =>
+        player.Name.toLowerCase().includes(query.toLowerCase())
+      );
+    }
+
+    if (country) {
+      filtered = filtered.filter((player) => player.Country_ID === country);
+    }
+
+    if (type) {
+      filtered = filtered.filter((player) => player.Type === type);
+    }
+
+    if (club) {
+      filtered = filtered.filter((player) => player.Club_ID === club);
+    }
+
+    setFilteredPlayers(filtered);
+    setShowNoPlayersMessage(filtered.length === 0);
+  };
+
+  const handleSelectCountry = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedCountry = event.target.value;
+    setSelectedCountry(selectedCountry);
+    setSelectedType(selectedType);
+    filterPlayers(searchQuery, selectedCountry, selectedType, selectedClub);
+  };
+
+  const handleSelectType = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedType = event.target.value;
+    setSelectedType(selectedType);
+    filterPlayers(searchQuery, selectedCountry, selectedType, selectedClub);
+  };
+
+  const handleSelectClub = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedClub = event.target.value;
+    setSelectedClub(selectedClub);
+    filterPlayers(searchQuery, selectedCountry, selectedType, selectedClub);
+  };
+
+  const handleRedirectPlayer = (user_ID: string, playerID: string) => {
+    router.push(`/landing/${user_ID}/players/${playerID}`);
+  };
+  interface SimilarPlayer {
+    id: string;
+    name: string;
+  }
+
+  const findSimilarPlayers = (
+    selectedStats: number[],
+    selectedPlayerID: string
+  ): SimilarPlayer[] => {
+    try {
+      const similarPlayersData = players
+        .filter((player) => player.ID !== selectedPlayerID)
+        .map((player) => {
+          const similarity = calculateCosineSimilarity(
+            selectedStats,
+            player.stats
+          );
+          return { id: player.ID, name: player.Name, similarity };
+        });
+
+      // Sort the players based on similarity (higher similarity first)
+      similarPlayersData.sort((a, b) => b.similarity - a.similarity);
+
+      // Get the top 4 most similar players
+      const topSimilarPlayers = similarPlayersData.slice(0, 4); // Get top 4 similar players
+
+      return topSimilarPlayers;
+    } catch (error) {
+      console.error("Error finding similar players:", error.message);
+      return []; // Return an empty array in case of an error
+    }
+  };
+
+  // Function to calculate cosine similarity between two vectors
+  const calculateCosineSimilarity = (vector1: number[], vector2: number[]) => {
+    const dotProduct = vector1.reduce(
+      (acc, val, index) => acc + val * vector2[index],
+      0
+    );
+    const magnitude1 = Math.sqrt(
+      vector1.reduce((acc, val) => acc + val * val, 0)
+    );
+    const magnitude2 = Math.sqrt(
+      vector2.reduce((acc, val) => acc + val * val, 0)
+    );
+    return dotProduct / (magnitude1 * magnitude2);
+  };
+
+  const numSlides = Math.ceil(filteredPlayers.length / 8); // Changed to 12 cards per slide
+  const sliderHeight =
+    numSlides >= 2 ? 515 : filteredPlayers.length <= 4 ? 260 : 525;
+
+  const settings = {
+    dots: false,
+    infinite: true,
+    speed: 500,
+    slidesToShow: 1,
+    slidesToScroll: 1,
+    arrows: true,
+    prevArrow: <CustomPrevArrow />,
+    nextArrow: <CustomNextArrow />,
+    responsive: [
+      {
+        breakpoint: 768,
+        settings: {
+          slidesToShow: 2,
+          slidesToScroll: 1,
+        },
+      },
+    ],
+  };
+
+  return (
+    <>
+      <div>
+        <div className="p-3 flex items-center" style={{ width: "100%" }}>
+          <div
+            className=" p-3 justify-center border-2 border-gray-300 bg-gray-100"
+            style={{ width: "100%", borderRadius: "20px" }}
+          >
+            <div className="flex justify-left items-center mb-4 p-3">
+              <input
+                type="text"
+                placeholder="Search player..."
+                value={searchQuery}
+                onChange={(e) => handleSearch(e.target.value)}
+                className="p-2 border border-gray-300 rounded-md"
+              />
+              <select
+                value={selectedType}
+                onChange={handleSelectType}
+                className="px-4 py-2 rounded-md border border-gray-300 focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                style={{ height: "42px", width: "220px", marginLeft: "10px" }}
+              >
+                <option value="">All Positions</option>
+                <option key="defender" value="defender">
+                  defender
+                </option>
+                <option key="midfielder" value="midfielder">
+                  midfielder
+                </option>
+                <option key="forward" value="forward">
+                  forward
+                </option>
+              </select>
+              <select
+                value={selectedCountry}
+                onChange={handleSelectCountry}
+                className="px-4 py-2 rounded-md border border-gray-300 focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                style={{ height: "42px", width: "220px", marginLeft: "10px" }}
+              >
+                <option value="">All Countries</option>
+                {uniqueCountries.map((country) => (
+                  <option key={country.Country_ID} value={country.Country_ID}>
+                    {country.Country_Name}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={selectedClub}
+                onChange={handleSelectClub}
+                className="px-4 py-2 rounded-md border border-gray-300 focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                style={{ height: "42px", width: "220px", marginLeft: "10px" }}
+              >
+                <option value="">All Clubs</option>
+                {uniqueClubs.map((club) => (
+                  <option key={club.Club_ID} value={club.Club_ID}>
+                    {club.Club_Name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {/* Player cards */}
+            <center>
+              {/* Slider */}
+              <div
+                className="p-1 border-2 border-gray-600"
+                style={{
+                  width: "1000px",
+                  borderCollapse: "collapse",
+                  borderRadius: "20px",
+                  height: `${sliderHeight}px`, // Dynamic height based on number of slides
+                  overflow: "hidden",
+                }}
+              >
+                <div
+                  className="mx-auto"
+                  style={{ maxWidth: "1000px", maxHeight: "510px" }}
+                >
+                  {numSlides > 1 ? (
+                    <Slider {...settings} className="p-3">
+                      {Array.from({ length: numSlides }, (_, slideIndex) => (
+                        <div key={slideIndex}>
+                          <div className="flex flex-col justify-center">
+                            {/* Calculate card indices based on slideIndex */}
+                            {[0, 1].map(
+                              (
+                                row // Only render two rows
+                              ) => (
+                                <div
+                                  key={row}
+                                  className="flex flex-row justify-center mt-3"
+                                >
+                                  {/* Calculate card indices for each row */}
+                                  {filteredPlayers
+                                    .slice(
+                                      slideIndex * 8 + row * 4,
+                                      slideIndex * 8 + row * 4 + 4
+                                    ) // Display 4 cards in each row
+                                    .map((player) => (
+                                      <div
+                                        key={player.ID}
+                                        className="block max-w-sm p-4 bg-white border border-gray-200 rounded-lg shadow transform transition duration-300 hover:scale-105"
+                                        style={{
+                                          width: "210px",
+                                          height: "210px",
+                                          margin: "0 10px",
+                                        }}
+                                        onClick={() =>
+                                          handleSelectPlayer(player.ID)
+                                        }
+                                      >
+                                        <div className="flex flex-col items-center">
+                                          <img
+                                            src={player.headshot}
+                                            alt={player.Name}
+                                            style={{
+                                              width: "150px",
+                                              height: "150px",
+                                            }}
+                                          />
+                                          <span className="mb-2 text-l font-bold tracking-tight text-gray-900 p-1">
+                                            {player.Name}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    ))}
+                                </div>
+                              )
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </Slider>
+                  ) : (
+                    <div className="p-3">
+                      {showNoPlayersMessage ? (
+                        <h1 className="font-semibold text-2xl">
+                          No Players Found
+                        </h1>
+                      ) : (
+                        <>
+                          <div className="flex flex-row justify-center">
+                            {filteredPlayers.slice(0, 4).map((player) => (
+                              <div
+                                key={player.ID}
+                                className="block max-w-sm p-4 bg-white border border-gray-200 rounded-lg shadow transform transition duration-300 hover:scale-105"
+                                style={{
+                                  width: "210px",
+                                  height: "210px",
+                                  margin: "0 10px",
+                                }}
+                                onClick={() => handleSelectPlayer(player.ID)}
+                              >
+                                <div className="flex flex-col items-center">
+                                  <img
+                                    src={player.headshot}
+                                    alt={player.Name}
+                                    style={{ width: "150px", height: "150px" }}
+                                  />
+                                  <span className="mb-2 text-l font-bold tracking-tight text-gray-900 p-1">
+                                    {player.Name}
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          <div className="flex flex-row justify-center mt-3">
+                            {filteredPlayers.slice(4, 8).map((player) => (
+                              <div
+                                key={player.ID}
+                                className="block max-w-sm p-4 bg-white border border-gray-200 rounded-lg shadow transform transition duration-300 hover:scale-105"
+                                style={{
+                                  width: "210px",
+                                  height: "210px",
+                                  margin: "0 10px",
+                                }}
+                                onClick={() => handleSelectPlayer(player.ID)}
+                              >
+                                <div className="flex flex-col items-center">
+                                  <img
+                                    src={player.headshot}
+                                    alt={player.Name}
+                                    style={{ height: "150px" }}
+                                  />
+                                  <span className="mb-2 text-l font-bold tracking-tight text-gray-900 p-1">
+                                    {player.Name}
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          {filteredPlayers.length > 8 && (
+                            <div className="flex flex-row justify-center mt-3">
+                              {filteredPlayers.slice(8, 12).map((player) => (
+                                <div
+                                  key={player.ID}
+                                  className="block max-w-sm p-4 bg-white border border-gray-200 rounded-lg shadow transform transition duration-300 hover:scale-105"
+                                  style={{
+                                    width: "210px",
+                                    height: "210px",
+                                    margin: "0 10px",
+                                  }}
+                                  onClick={() => handleSelectPlayer(player.ID)}
+                                >
+                                  <div className="flex flex-col items-center">
+                                    <img
+                                      src={player.headshot}
+                                      alt={player.Name}
+                                      style={{
+                                        width: "150px",
+                                        height: "150px",
+                                      }}
+                                    />
+                                    <span className="mb-2 text-l font-bold tracking-tight text-gray-900 p-1">
+                                      {player.Name}
+                                    </span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </center>
+          </div>
+        </div>
+      </div>
+      <br />
+      {/* Scout container */}
+
+      <div className="p-3 flex items-center" style={{ width: "100%" }}>
+        <div
+          className=" p-3 justify-center border-2 border-gray-300 bg-gray-100"
+          style={{ width: "100%", borderRadius: "20px" }}
+        >
+          {selectedPlayer && (
+            <div className="scout-container">
+              <center>
+                <div
+                  className="player-stats border-2 border-gray-500 p-2 items-center"
+                  style={{ borderRadius: "20px", maxWidth: "240px" }}
+                >
+                  <img
+                    src={selectedPlayerCard}
+                    style={{ height: "240px" }}
+                    alt="Selected Player Card"
+                  />
+                </div>
+                <br />
+                <div className="text-xl">
+                  Players similar to <b>{selectedPlayer?.Name}</b> :
+                </div>
+              </center>
+              <br />
+              <div className="similar-players">
+                <div className="flex justify-center">
+                  {similarPlayers.slice(0, 4).map((similarPlayer, index) => {
+                    return (
+                      <div
+                        key={index}
+                        className="similar-player mx-6 text-center"
+                      >
+                        <img
+                          src={similarPlayersCard[index]}
+                          style={{ height: "240px" }}
+                          alt={similarPlayer.id}
+                          onClick={() =>
+                            handleRedirectPlayer(user_ID, similarPlayer.id)
+                          }
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </>
+  );
+};
+const Goalkeeper: React.FC<PlayersProps> = ({ user_ID }) => {
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [filteredPlayers, setFilteredPlayers] = useState<Player[]>([]);
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [selectedCountry, setSelectedCountry] = useState<string>("");
+  const [selectedType, setSelectedType] = useState<string>("");
+  const [uniqueCountries, setUniqueCountries] = useState<string[]>([]);
+  const [uniqueClubs, setUniqueClubs] = useState<string[]>([]);
+  const [showNoPlayersMessage, setShowNoPlayersMessage] =
+    useState<boolean>(false);
+  const [selectedClub, setSelectedClub] = useState<string>("");
+  const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
+  const [selectedPlayerStats, setSelectedPlayerStats] = useState<number[]>([]); // Changed to number[]
+  const [similarPlayers, setSimilarPlayers] = useState<string[]>([]);
+  const [selectedPlayerCard, setSelectedPlayerCard] = useState<string>(""); // Add semicolon and specify the initial state
+  const [similarPlayersCard, setSimilarPlayersCard] = useState<string[]>([]); // Add semicolon and specify the initial state
+
+  const router = useRouter();
+  useEffect(() => {
+    const fetchPlayersAndCountries = async () => {
+      try {
+        // Fetch players data
+        const { data: playersData, error: playersError } = await supabase
+          .from("players")
+          .select("headshot, Name, Type, Country_ID, ID, Club_ID")
+          .in("Type", ["goalkeeper"])
+          .order("ID", { ascending: true });
+        if (playersError) throw playersError;
+
+        // Fetch player stats data
+        const { data: playerStatsData, error: statsError } = await supabase
+          .from("goalkeeper_stats")
+          .select(
+            "Rating, Vision, Reactions, Composure, Strength, Diving, Handling, Kicking, Positioning, Reflexes, Speed, ID"
+          )
+          .neq("ID", "0");
+        if (statsError) throw statsError;
+
+        // Fetch countries data
+        const uniqueCountryIDs = [
+          ...new Set(playersData.map((player) => player.Country_ID)),
+        ];
+        const { data: countriesData, error: countriesError } = await supabase
+          .from("countries")
+          .select("Country_ID, Country_Name")
+          .in("Country_ID", uniqueCountryIDs);
+        if (countriesError) throw countriesError;
+
+        // Fetch clubs data
+        const uniqueClubIDs = [
+          ...new Set(playersData.map((player) => player.Club_ID)),
+        ];
+        const { data: clubsData, error: clubsError } = await supabase
+          .from("clubs")
+          .select("Club_ID, Club_Name")
+          .in("Club_ID", uniqueClubIDs);
+        if (clubsError) throw clubsError;
+
+        // Update state with fetched data
+        setUniqueCountries(countriesData);
+        setUniqueClubs(clubsData);
+
+        // Create a map of player stats using player_id as key
+        const playerStatsMap = new Map();
+        playerStatsData.forEach((stats) => {
+          playerStatsMap.set(stats.ID, stats);
+        });
+
+        // Combine player data with stats, clubs, and countries
+        const playersWithFullData = playersData.map((player) => {
+          const stats = playerStatsMap.get(player.ID) || {
+            Rating: 0,
+            Diving: 0,
+            Kicking: 0,
+            Handling: 0,
+            Reflexes: 0,
+            Positioning: 0,
+            Speed: 0,
+            Reactions: 0,
+            Composure: 0,
+            Strength: 0,
+            Vision: 0,
+          };
+          const statsArray = [
+            stats.Rating,
+            stats.Diving,
+            stats.Handling,
+            stats.Kicking,
+            stats.Reflexes,
+            stats.Positioning,
+            stats.Speed,
+            stats.Reactions,
+            stats.Composure,
+            stats.Strength,
+            stats.Vision,
+          ];
+          const country = countriesData.find(
+            (country) => country.Country_ID === player.Country_ID
+          ) || { Country_Name: "Unknown" };
+          const club = clubsData.find(
+            (club) => club.Club_ID === player.Club_ID
+          ) || { Club_Name: "Unknown" };
+          return {
+            ...player,
+            stats: statsArray,
+            Country_Name: country.Country_Name,
+            Club_Name: club.Club_Name,
+          };
+        });
+
+        setPlayers(playersWithFullData);
+        setFilteredPlayers(playersWithFullData);
+      } catch (error) {
+        console.error("Error fetching data:", error.message);
+      }
+    };
+
+    fetchPlayersAndCountries();
+  }, []);
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    filterPlayers(query, selectedCountry, selectedType, selectedClub);
+  };
+
+  const handleSelectPlayer = async (playerID: string) => {
+    try {
+      const player = players.find((player) => player.ID === playerID);
+      setSelectedPlayer(player || null);
+
+      if (player) {
+        setSelectedPlayerStats(player.stats);
+
+        // Fetch the "Card" data for the selected player
+        const { data: selectedPlayerCardData, error: cardError } =
+          await supabase
+            .from("goalkeeper_stats")
+            .select("Card")
+            .eq("ID", player.ID)
+            .single();
+
+        if (cardError) throw cardError;
+
+        const selectedCard = selectedPlayerCardData?.Card || "";
+        setSelectedPlayerCard(selectedCard);
+
+        // Find similar players when player is selected
+        const similarPlayerData = findSimilarPlayers(player.stats, player.ID);
+        setSimilarPlayers(similarPlayerData);
+
+        // Fetch cards for similar players
+        const similarPlayerIDs = similarPlayerData.map((player) => player.id);
+        const { data: similarPlayersCardData, error: similarPlayersCardError } =
+          await supabase
+            .from("goalkeeper_stats")
+            .select("ID, Card") // Include ID in the selection
+            .in("ID", similarPlayerIDs);
+        if (similarPlayersCardError) throw similarPlayersCardError;
+
+        // Create a map of similar player IDs to their cards
+        const similarPlayersCardMap = new Map();
+        similarPlayersCardData.forEach((player) => {
+          similarPlayersCardMap.set(player.ID, player.Card);
+        });
+
+        // Map similar player IDs to their corresponding cards
+        const similarPlayersCard = similarPlayerIDs.map(
+          (id) => similarPlayersCardMap.get(id) || ""
+        );
+        setSimilarPlayersCard(similarPlayersCard); // Set cards for similar players
+      }
+    } catch (error) {
+      console.error("Error selecting player:", error.message);
+    }
+  };
+
+  const filterPlayers = (
+    query: string,
+    country: string,
+    type: string,
+    club: string
+  ) => {
+    let filtered = players;
+
+    if (query) {
+      filtered = filtered.filter((player) =>
+        player.Name.toLowerCase().includes(query.toLowerCase())
+      );
+    }
+
+    if (country) {
+      filtered = filtered.filter((player) => player.Country_ID === country);
+    }
+
+    if (club) {
+      filtered = filtered.filter((player) => player.Club_ID === club);
+    }
+
+    setFilteredPlayers(filtered);
+    setShowNoPlayersMessage(filtered.length === 0);
+  };
+
+  const handleSelectCountry = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedCountry = event.target.value;
+    setSelectedCountry(selectedCountry);
+    setSelectedType(selectedType);
+    filterPlayers(searchQuery, selectedCountry, selectedType, selectedClub);
+  };
+
+  const handleSelectClub = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedClub = event.target.value;
+    setSelectedClub(selectedClub);
+    filterPlayers(searchQuery, selectedCountry, selectedType, selectedClub);
+  };
+
+  const handleRedirectPlayer = (user_ID: string, playerID: string) => {
+    router.push(`/landing/${user_ID}/players/${playerID}`);
+  };
+  interface SimilarPlayer {
+    id: string;
+    name: string;
+  }
+
+  const findSimilarPlayers = (
+    selectedStats: number[],
+    selectedPlayerID: string
+  ): SimilarPlayer[] => {
+    try {
+      const similarPlayersData = players
+        .filter((player) => player.ID !== selectedPlayerID)
+        .map((player) => {
+          const similarity = calculateCosineSimilarity(
+            selectedStats,
+            player.stats
+          );
+          return { id: player.ID, name: player.Name, similarity };
+        });
+
+      // Sort the players based on similarity (higher similarity first)
+      similarPlayersData.sort((a, b) => b.similarity - a.similarity);
+
+      // Get the top 4 most similar players
+      const topSimilarPlayers = similarPlayersData.slice(0, 4); // Get top 4 similar players
+
+      return topSimilarPlayers;
+    } catch (error) {
+      console.error("Error finding similar players:", error.message);
+      return []; // Return an empty array in case of an error
+    }
+  };
+
+  // Function to calculate cosine similarity between two vectors
+  const calculateCosineSimilarity = (vector1: number[], vector2: number[]) => {
+    const dotProduct = vector1.reduce(
+      (acc, val, index) => acc + val * vector2[index],
+      0
+    );
+    const magnitude1 = Math.sqrt(
+      vector1.reduce((acc, val) => acc + val * val, 0)
+    );
+    const magnitude2 = Math.sqrt(
+      vector2.reduce((acc, val) => acc + val * val, 0)
+    );
+    return dotProduct / (magnitude1 * magnitude2);
+  };
+
+  const numSlides = Math.ceil(filteredPlayers.length / 8); // Changed to 12 cards per slide
+  const sliderHeight =
+    numSlides >= 2 ? 515 : filteredPlayers.length <= 4 ? 260 : 525;
+
+  const settings = {
+    dots: false,
+    infinite: true,
+    speed: 500,
+    slidesToShow: 1,
+    slidesToScroll: 1,
+    arrows: true,
+    prevArrow: <CustomPrevArrow />,
+    nextArrow: <CustomNextArrow />,
+    responsive: [
+      {
+        breakpoint: 768,
+        settings: {
+          slidesToShow: 2,
+          slidesToScroll: 1,
+        },
+      },
+    ],
+  };
+
+  return (
+    <>
+      <div>
+        <div className="p-3 flex items-center" style={{ width: "100%" }}>
+          <div
+            className=" p-3 justify-center border-2 border-gray-300 bg-gray-100"
+            style={{ width: "100%", borderRadius: "20px" }}
+          >
+            <div className="flex justify-left items-center mb-4 p-3">
+              <input
+                type="text"
+                placeholder="Search player..."
+                value={searchQuery}
+                onChange={(e) => handleSearch(e.target.value)}
+                className="p-2 border border-gray-300 rounded-md"
+              />
+
+              <select
+                value={selectedCountry}
+                onChange={handleSelectCountry}
+                className="px-4 py-2 rounded-md border border-gray-300 focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                style={{ height: "42px", width: "220px", marginLeft: "10px" }}
+              >
+                <option value="">All Countries</option>
+                {uniqueCountries.map((country) => (
+                  <option key={country.Country_ID} value={country.Country_ID}>
+                    {country.Country_Name}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={selectedClub}
+                onChange={handleSelectClub}
+                className="px-4 py-2 rounded-md border border-gray-300 focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                style={{ height: "42px", width: "220px", marginLeft: "10px" }}
+              >
+                <option value="">All Clubs</option>
+                {uniqueClubs.map((club) => (
+                  <option key={club.Club_ID} value={club.Club_ID}>
+                    {club.Club_Name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {/* Player cards */}
+            <center>
+              {/* Slider */}
+              <div
+                className="p-1 border-2 border-gray-600"
+                style={{
+                  width: "1000px",
+                  borderCollapse: "collapse",
+                  borderRadius: "20px",
+                  height: `${sliderHeight}px`, // Dynamic height based on number of slides
+                  overflow: "hidden",
+                }}
+              >
+                <div
+                  className="mx-auto"
+                  style={{ maxWidth: "1000px", maxHeight: "510px" }}
+                >
+                  {numSlides > 1 ? (
+                    <Slider {...settings} className="p-3">
+                      {Array.from({ length: numSlides }, (_, slideIndex) => (
+                        <div key={slideIndex}>
+                          <div className="flex flex-col justify-center">
+                            {/* Calculate card indices based on slideIndex */}
+                            {[0, 1].map(
+                              (
+                                row // Only render two rows
+                              ) => (
+                                <div
+                                  key={row}
+                                  className="flex flex-row justify-center mt-3"
+                                >
+                                  {/* Calculate card indices for each row */}
+                                  {filteredPlayers
+                                    .slice(
+                                      slideIndex * 8 + row * 4,
+                                      slideIndex * 8 + row * 4 + 4
+                                    ) // Display 4 cards in each row
+                                    .map((player) => (
+                                      <div
+                                        key={player.ID}
+                                        className="block max-w-sm p-4 bg-white border border-gray-200 rounded-lg shadow transform transition duration-300 hover:scale-105"
+                                        style={{
+                                          width: "210px",
+                                          height: "210px",
+                                          margin: "0 10px",
+                                        }}
+                                        onClick={() =>
+                                          handleSelectPlayer(player.ID)
+                                        }
+                                      >
+                                        <div className="flex flex-col items-center">
+                                          <img
+                                            src={player.headshot}
+                                            alt={player.Name}
+                                            style={{
+                                              width: "150px",
+                                              height: "150px",
+                                            }}
+                                          />
+                                          <span className="mb-2 text-l font-bold tracking-tight text-gray-900 p-1">
+                                            {player.Name}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    ))}
+                                </div>
+                              )
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </Slider>
+                  ) : (
+                    <div className="p-3">
+                      {showNoPlayersMessage ? (
+                        <h1 className="font-semibold text-2xl">
+                          No Players Found
+                        </h1>
+                      ) : (
+                        <>
+                          <div className="flex flex-row justify-center">
+                            {filteredPlayers.slice(0, 4).map((player) => (
+                              <div
+                                key={player.ID}
+                                className="block max-w-sm p-4 bg-white border border-gray-200 rounded-lg shadow transform transition duration-300 hover:scale-105"
+                                style={{
+                                  width: "210px",
+                                  height: "210px",
+                                  margin: "0 10px",
+                                }}
+                                onClick={() => handleSelectPlayer(player.ID)}
+                              >
+                                <div className="flex flex-col items-center">
+                                  <img
+                                    src={player.headshot}
+                                    alt={player.Name}
+                                    style={{ width: "150px", height: "150px" }}
+                                  />
+                                  <span className="mb-2 text-l font-bold tracking-tight text-gray-900 p-1">
+                                    {player.Name}
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          <div className="flex flex-row justify-center mt-3">
+                            {filteredPlayers.slice(4, 8).map((player) => (
+                              <div
+                                key={player.ID}
+                                className="block max-w-sm p-4 bg-white border border-gray-200 rounded-lg shadow transform transition duration-300 hover:scale-105"
+                                style={{
+                                  width: "210px",
+                                  height: "210px",
+                                  margin: "0 10px",
+                                }}
+                                onClick={() => handleSelectPlayer(player.ID)}
+                              >
+                                <div className="flex flex-col items-center">
+                                  <img
+                                    src={player.headshot}
+                                    alt={player.Name}
+                                    style={{ width: "150px", height: "150px" }}
+                                  />
+                                  <span className="mb-2 text-l font-bold tracking-tight text-gray-900 p-1">
+                                    {player.Name}
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          {filteredPlayers.length > 8 && (
+                            <div className="flex flex-row justify-center mt-3">
+                              {filteredPlayers.slice(8, 12).map((player) => (
+                                <div
+                                  key={player.ID}
+                                  className="block max-w-sm p-4 bg-white border border-gray-200 rounded-lg shadow transform transition duration-300 hover:scale-105"
+                                  style={{
+                                    width: "210px",
+                                    height: "210px",
+                                    margin: "0 10px",
+                                  }}
+                                  onClick={() => handleSelectPlayer(player.ID)}
+                                >
+                                  <div className="flex flex-col items-center">
+                                    <img
+                                      src={player.headshot}
+                                      alt={player.Name}
+                                      style={{
+                                        width: "150px",
+                                        height: "150px",
+                                      }}
+                                    />
+                                    <span className="mb-2 text-l font-bold tracking-tight text-gray-900 p-1">
+                                      {player.Name}
+                                    </span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </center>
+          </div>
+        </div>
+      </div>
+      <br />
+      {/* Scout container */}
+
+      <div className="p-3 flex items-center" style={{ width: "100%" }}>
+        <div
+          className=" p-3 justify-center border-2 border-gray-300 bg-gray-100"
+          style={{ width: "100%", borderRadius: "20px" }}
+        >
+          {selectedPlayer && (
+            <div className="scout-container">
+              <center>
+                <div
+                  className="player-stats border-2 border-gray-500 p-2 items-center"
+                  style={{ borderRadius: "20px", maxWidth: "240px" }}
+                >
+                  <img
+                    src={selectedPlayerCard}
+                    style={{ height: "240px" }}
+                    alt="Selected Player Card"
+                  />
+                </div>
+                <br />
+                <div className="text-xl">
+                  Players similar to <b>{selectedPlayer?.Name}</b> :
+                </div>
+              </center>
+              <br />
+              <div className="similar-players">
+                <div className="flex justify-center">
+                  {similarPlayers.slice(0, 4).map((similarPlayer, index) => {
+                    return (
+                      <div
+                        key={index}
+                        className="similar-player mx-6 text-center"
+                      >
+                        <img
+                          src={similarPlayersCard[index]}
+                          style={{ height: "240px" }}
+                          alt={similarPlayer.id}
+                          onClick={() =>
+                            handleRedirectPlayer(user_ID, similarPlayer.id)
+                          }
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </>
+  );
+};
+
+const Dashboard = ({ params }) => {
+  const router = useRouter();
+  const [profilePicture, setProfilePicture] = useState("");
+  const [userName, setUserName] = useState(""); // State to store user's name
+  const horizontalNavbarRef = useRef<HTMLDivElement>(null);
+  const [signOutMessage, setSignOutMessage] = useState("");
+
+  const [selectedTab, setSelectedTab] = useState<"outfield" | "goalkeeper">(
+    "outfield"
+  );
+
+  const handleTabChange = (tab: "outfield" | "goalkeeper") => {
+    setSelectedTab(tab);
+  };
+
+  const Club_ID = params.Club_ID;
+
+  useEffect(() => {
+    fetchUserData(params.user_ID); // Fetch user data when user_ID changes
+  }, [params.user_ID]); // Trigger the effect when user_ID changes
+
+  useEffect(() => {
+    const horizontalNavbarHeight =
+      horizontalNavbarRef.current?.clientHeight || 0;
+    document.documentElement.style.setProperty(
+      "--horizontal-navbar-height",
+      `${horizontalNavbarHeight}px`
+    );
+  }, []);
+
+  const fetchUserData = async (userID) => {
+    try {
+      const { data: userData, error: userError } = await supabase
+        .from("users")
+        .select("*")
+        .eq("user_ID", userID)
+        .single();
+
+      if (userError) {
+        throw userError;
+      }
+
+      if (userData && userData.Pfp) {
+        setProfilePicture(userData.Pfp);
+      }
+
+      // Set user's name if available
+      if (userData && userData.Full_Name) {
+        setUserName(userData.Full_Name);
+      }
+    } catch (error) {
+      console.error("Error fetching user data:", error.message);
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await supabase.auth.signOut();
+      setSignOutMessage("Successfully signed out"); // Update state to display the message
+      setTimeout(() => {
+        setSignOutMessage(""); // Clear the message after 3 seconds
+        router.push("/"); // Redirect to the login page after signing out
+      }, 3000);
+    } catch (error) {
+      console.error("Error signing out:", error.message);
+    }
+  };
+
+  console.log("Profile Picture State:", profilePicture);
+  console.log("User Name:", userName);
+
+  return (
+    <div>
+      <Chatbot />
+      {signOutMessage && (
+        <Message
+          message={signOutMessage}
+          onClose={() => setSignOutMessage("")}
+        />
+      )}
+      <LandingNavbar
+        profilePicture={profilePicture}
+        ref={horizontalNavbarRef}
+        handleSignOut={handleSignOut}
+        user_ID={params.user_ID}
+      />
+      <div style={{ marginTop: "var(--horizontal-navbar-height, 0)" }}>
+        <VerticalNavbar user_ID={params.user_ID} />
+        <div style={{ marginLeft: 210, marginTop: 70 }}>
+          <br />
+          <center>
+            <div
+              className="p-6 grid grid-cols-2"
+              style={{ maxWidth: "750px", maxHeight: "370px" }}
+            >
+              <div
+                className="p-2 items-center border-2 border-gray-700 text-xl"
+                style={{
+                  maxWidth: "350px",
+                  maxHeight: "350px",
+                  backgroundColor: selectedTab === "outfield" ? "#a50044" : "", // Change background color based on selectedTab
+                  color: selectedTab === "outfield" ? "#ffffff" : "", // Change font color based on selectedTab
+                  fontWeight: selectedTab === "outfield" ? "600" : "normal", // Change font weight based on selectedTab
+                }}
+                onClick={() => handleTabChange("outfield")}
+              >
+                Outfield Players
+              </div>
+              <div
+                className="p-2 items-center border-2 border-gray-700 text-xl"
+                style={{
+                  maxWidth: "350px",
+                  maxHeight: "350px",
+                  backgroundColor:
+                    selectedTab === "goalkeeper" ? "#a50044" : "", // Change background color based on selectedTab
+                  color: selectedTab === "goalkeeper" ? "#ffffff" : "", // Change font color based on selectedTab
+                  fontWeight: selectedTab === "goalkeeper" ? "600" : "normal", // Change font weight based on selectedTab
+                }}
+                onClick={() => handleTabChange("goalkeeper")}
+              >
+                Goalkeepers
+              </div>
+            </div>
+          </center>
+
+          {selectedTab === "outfield" && (
+            <div className="outfield-players-template">
+              <Outfield user_ID={params.user_ID} />
+            </div>
+          )}
+
+          {selectedTab === "goalkeeper" && (
+            <div className="goalkeeper-template">
+              <Goalkeeper user_ID={params.user_ID} />
+            </div>
+          )}
+          <br />
+          <br />
+          <br />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Dashboard;
