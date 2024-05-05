@@ -9,11 +9,11 @@ This project is a user centric one stop platform where the user can predict the 
 2) Extract the ZIP File: Extract the downloaded ZIP file to a location of your choice on your computer.
 3) Install Dependencies: Open your terminal or command prompt, navigate to the extracted folder directory, and run the following command to install project dependencies:
 
-    npm install
+        npm install
 
 4) Run the Project: After installing the dependencies, start the development server by running the following command:
 
-    npm run dev
+        npm run dev
 
 And then go to the api folder in the project directory and run the file called "chatbot.py"
 
