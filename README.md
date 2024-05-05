@@ -39,5 +39,5 @@ I welcome contributions from the community to improve this starter project. If y
  3) Ensure that your code follows the project's coding standards and conventions.
 
 ## License
-This project is licensed under the Academic Free License v3.0 (AFL-3.0) 
+This project is licensed under the MIT License. See the License.md file for details.
 
